@@ -1,0 +1,80 @@
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "detect-secrets",
+          "rules": [
+            {
+              "id": "AWS_Access_Key",
+              "name": "AWS Access Key",
+              "shortDescription": {"text": "AWS Access Key"},
+              "fullDescription": {"text": "Detected an AWS Access Key pattern."},
+              "properties": {"tags": ["detect-secrets"]}
+            },
+            {
+              "id": "Base64_High_Entropy_String",
+              "name": "Base64 High Entropy String",
+              "shortDescription": {"text": "Base64 High Entropy String"},
+              "fullDescription": {"text": "Detected a high-entropy Base64 string."},
+              "properties": {"tags": ["detect-secrets"]}
+            },
+            {
+              "id": "Secret_Keyword",
+              "name": "Secret Keyword",
+              "shortDescription": {"text": "Secret Keyword"},
+              "fullDescription": {"text": "Detected use of a secret keyword."},
+              "properties": {"tags": ["detect-secrets"]}
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "AWS_Access_Key",
+          "level": "warning",
+          "message": {"text": "AWS Access Key found in .env"},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": ".env"},
+                "region": {"startLine": 2}
+              }
+            }
+          ],
+          "properties": {"detect_secrets": {"hashed_secret": "217531096aeb5f9c2932f59047266da488c6a1e2"}}
+        },
+        {
+          "ruleId": "Base64_High_Entropy_String",
+          "level": "warning",
+          "message": {"text": "Base64 High Entropy String found in .env"},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": ".env"},
+                "region": {"startLine": 2}
+              }
+            }
+          ],
+          "properties": {"detect_secrets": {"hashed_secret": "217531096aeb5f9c2932f59047266da488c6a1e2"}}
+        },
+        {
+          "ruleId": "Secret_Keyword",
+          "level": "warning",
+          "message": {"text": "Secret Keyword found in .env"},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": ".env"},
+                "region": {"startLine": 2}
+              }
+            }
+          ],
+          "properties": {"detect_secrets": {"hashed_secret": "217531096aeb5f9c2932f59047266da488c6a1e2"}}
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# uv.lock stub - this file is provided as a placeholder for a dependency lock.
+# The converter intentionally uses only the Python stdlib so no dependencies are required.
+
+package: detect-secrets
+version: 1.5.0

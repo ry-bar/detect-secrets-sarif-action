@@ -1,0 +1,30 @@
+{
+  "version": "1.5.0",
+  "plugins_used": [],
+  "results": {
+    ".env": [
+      {
+        "type": "AWS Access Key",
+        "filename": ".env",
+        "hashed_secret": "217531096aeb5f9c2932f59047266da488c6a1e2",
+        "is_verified": false,
+        "line_number": 2
+      },
+      {
+        "type": "Base64 High Entropy String",
+        "filename": ".env",
+        "hashed_secret": "217531096aeb5f9c2932f59047266da488c6a1e2",
+        "is_verified": false,
+        "line_number": 2
+      },
+      {
+        "type": "Secret Keyword",
+        "filename": ".env",
+        "hashed_secret": "217531096aeb5f9c2932f59047266da488c6a1e2",
+        "is_verified": false,
+        "line_number": 2
+      }
+    ]
+  },
+  "generated_at": "2025-12-03T04:32:38Z"
+}

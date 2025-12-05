@@ -1,0 +1,24 @@
+name: Security scan
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  convert-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: convert
+        name: Run detect-secrets → SARIF converter
+        uses: ./
+        with:
+          input-file: detect_secrets_baseline.json
+          output-file: results.sarif
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.convert.outputs.sarif-file }}

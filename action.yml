@@ -1,0 +1,46 @@
+name: "Detect Secrets → SARIF Converter"
+description: "Composite GitHub Action that converts detect-secrets JSON output into SARIF 2.1.0 and exposes the SARIF file and findings count."
+branding:
+  color: "blue"
+  icon: "shield"
+
+inputs:
+  input-file:
+    description: 'Path to the detect-secrets JSON input file (relative to workspace).'
+    required: true
+    default: 'detect_secrets_baseline.json'
+  output-file:
+    description: 'Path where the SARIF output will be written (relative to workspace).'
+    required: true
+    default: 'results.sarif'
+
+outputs:
+  sarif-file:
+    description: 'Path to the generated SARIF file.'
+  findings-count:
+    description: 'Number of findings converted into the SARIF file.'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Run converter
+      id: convert
+      shell: bash
+      run: |
+        # Run the converter and capture its two-line key=value output
+        echo "Running detect-secrets → SARIF converter"
+        summary=$(python3 converter.py --input "${{ inputs.input-file }}" --output "${{ inputs.output-file }}")
+        echo "$summary" | tee /tmp/convert-summary.txt
+        sarif_file=$(grep '^sarif_file=' /tmp/convert-summary.txt | cut -d= -f2- || true)
+        findings_count=$(grep '^findings_count=' /tmp/convert-summary.txt | cut -d= -f2- || true)
+        # Export to composite action outputs via GITHUB_OUTPUT
+        echo "sarif-file=$sarif_file" >> "$GITHUB_OUTPUT"
+        echo "findings-count=$findings_count" >> "$GITHUB_OUTPUT"
