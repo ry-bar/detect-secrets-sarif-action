@@ -7,6 +7,8 @@ on:
 jobs:
   convert-and-upload:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,4 +23,4 @@ jobs:
       - name: Upload SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ steps.convert.outputs.sarif-file }}
+          sarif_file: ${{ steps.convert.outputs['sarif-file'] }}
