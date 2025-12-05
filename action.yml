@@ -18,8 +18,10 @@ inputs:
 outputs:
   sarif-file:
     description: "Path to the generated SARIF file."
+    value: ${{ steps.convert.outputs.sarif-file }}
   findings-count:
     description: "Number of findings converted into the SARIF file."
+    value: ${{ steps.convert.outputs.findings-count }}
 
 runs:
   using: "composite"
