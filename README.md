@@ -1,106 +1,95 @@
-# Detect-Secrets → SARIF Converter GitHub Action
+# Detect-Secrets → SARIF Converter Action
 
-This repository contains a small GitHub Action that converts the JSON output of the open-source tool `detect-secrets` into SARIF 2.1.0 format so it can be uploaded to GitHub Advanced Security Code Scanning.
+Convert `detect-secrets` JSON output into SARIF 2.1.0 so you can upload secret-detection findings to GitHub Advanced Security (Code Scanning) with a single composite GitHub Action.
 
-## What it does
+## Why this exists
 
-- Reads a `detect-secrets` JSON output file (for example, a baseline or a scan output).
-- Converts findings into a SARIF 2.1.0 file with `tool.driver.name` set to `detect-secrets`.
-- Each detect-secrets finding becomes a SARIF `result` with `level: warning`.
-- Unique detector types are emitted as SARIF `rules`.
+`detect-secrets` does not emit SARIF on its own, but SARIF is the format Code Scanning requires. This action bridges the gap by:
 
-The converter intentionally avoids exposing raw secrets (it preserves hashed_secret when present but does not include secret values).
+- Reading any detect-secrets JSON file (baseline or scan output) from your workspace.
+- Translating each finding into a SARIF `rule`/`result` pair with `tool.driver.name = detect-secrets`.
+- Emitting the SARIF file path and number of findings as reusable workflow outputs.
 
-## Files in this repository
+The converter only uses the Python standard library and never prints the raw secret value (hashed secrets are preserved when available).
 
-- `action.yml` — the composite GitHub Action manifest.
-- `converter.py` — converter script (pure Python stdlib).
-- `examples/sample-input.json` — sample detect-secrets JSON input (from `detect_secrets_baseline.json`).
-- `examples/sample-output.sarif` — example SARIF output produced from the sample input.
-- `.github/workflows/security-scan.yml` — example workflow that uses this action and uploads SARIF to Code Scanning.
-- `LICENSE` — MIT license.
-- `uv.lock` — (stub for dependency lock; intentionally minimal).
+## Requirements
 
-## Inputs & Outputs
+- GitHub-hosted or self-hosted runners with Python 3 (the action installs it via `actions/setup-python`).
+- A detect-secrets JSON file generated earlier in the workflow (for example via `detect-secrets scan` or by checking in a baseline file).
 
-Inputs (action inputs):
-
-- `input-file` (required): path to the detect-secrets JSON input (default: `detect_secrets_baseline.json`).
-- `output-file` (required): path to write the SARIF file (default: `results.sarif`).
-
-Outputs (action outputs):
-
-- `sarif-file`: path to the generated SARIF file.
-- `findings-count`: number of findings converted.
-
-## Example usage (workflow)
-
-Place this file in `.github/workflows/security-scan.yml` in the repo you want to test (an example is provided in this repo):
+## Quick start
 
 ```yaml
 name: Security scan
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  convert-and-upload:
+  detect-secrets:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Run detect-secrets scan
+        run: |
+          pip install detect-secrets
+          detect-secrets scan > detect_secrets_results.json
 
       - id: convert
-        name: Run detect-secrets → SARIF converter
-        uses: ./
+        name: Convert detect-secrets JSON to SARIF
+        uses: ry-bar/detect-secrets-sarif-action@main
         with:
-          input-file: detect_secrets_baseline.json
+          input-file: detect_secrets_results.json
           output-file: results.sarif
 
       - name: Upload SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: ${{ steps.convert.outputs.sarif-file }}
+          sarif_file: ${{ steps.convert.outputs['sarif-file'] }}
 ```
 
-> Note: In a real scan you would run `detect-secrets scan` or `detect-secrets audit` to generate the JSON input first. The example here uses the baseline file included for demonstration.
+> Tip: when using the action from another repository you should pin `ry-bar/detect-secrets-sarif-action` to a release tag or commit SHA instead of `@main`.
 
-## Example SARIF (snippet)
+## Inputs
 
-Below is a small excerpt of what the SARIF looks like (full example is in `examples/sample-output.sarif`):
+| Input | Required | Default | Description |
+| ----- | -------- | ------- | ----------- |
+| `input-file` | Yes | `detect_secrets_baseline.json` | Path (relative to the workspace) to the detect-secrets JSON file you want to convert. |
+| `output-file` | Yes | `results.sarif` | Path to the SARIF file that will be written. Directories are created if needed. |
 
-```json
-{
-  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0.json",
-  "version": "2.1.0",
-  "runs": [
-    {
-      "tool": { "driver": { "name": "detect-secrets" } },
-      "results": [
-        {
-          "ruleId": "AWS_Access_Key",
-          "level": "warning",
-          "message": { "text": "AWS Access Key found in .env" },
-          "locations": [ { "physicalLocation": { "artifactLocation": { "uri": ".env" }, "region": { "startLine": 2 } } } ]
-        }
-      ]
-    }
-  ]
-}
-```
+## Outputs
 
-## Development
+| Output | Description |
+| ------ | ----------- |
+| `sarif-file` | Path (relative to the workspace) of the SARIF document that was generated. |
+| `findings-count` | Total number of detect-secrets findings that were converted into the SARIF results array. |
 
-The converter is written to use only the Python standard library to keep the action lightweight. You can run it locally:
+## Local development
+
+You can exercise the converter script without running a workflow:
 
 ```bash
 python3 converter.py --input examples/sample-input.json --output /tmp/out.sarif
+cat /tmp/out.sarif
 ```
 
-It will print two lines on success:
+The script prints two `key=value` lines (`sarif_file=...` and `findings_count=...`), which is how the composite action captures its outputs.
 
-- `sarif_file=/tmp/out.sarif`
-- `findings_count=3`
+## Repository layout
+
+- `action.yml` – composite action definition used by workflows.
+- `converter.py` – Python script that transforms detect-secrets JSON into SARIF 2.1.0.
+- `detect_secrets_baseline.json` – example baseline you can use for demo runs.
+- `examples/` – sample input and output pairs.
+- `.github/workflows/security-scan.yml` – reference workflow showing the action in use.
+
+## Troubleshooting
+
+- The upload step must use a published version of `github/codeql-action/upload-sarif` (currently `v2`). Using a non-existent tag such as `v4` will cause the workflow to fail before the SARIF file is uploaded.
+- If the converter cannot find or parse the input JSON file it still emits a valid SARIF document with zero results; double-check the `input-file` path and that your detect-secrets step actually produced output.
 
 ## License
 
