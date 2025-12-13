@@ -135,6 +135,20 @@ def build_sarif_from_results(results: Dict[str, Any]) -> Tuple[Dict[str, Any], i
                 metadata["hashed_secret"] = entry.get("hashed_secret")
             if metadata:
                 result["properties"] = {"detect_secrets": metadata}
+                
+            severity_map = {
+                "AWS Access Key": "critical",
+                "Base64 High Entropy String": "high",
+                "Secret Keyword": "medium",
+            }
+
+            sec_sev = severity_map.get(ftype, "low")
+
+            # Merge with existing properties
+            result["properties"] = {
+                "detect_secrets": metadata, 
+                "security-severity": sec_sev
+            }
 
             sarif_results.append(result)
 
