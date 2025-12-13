@@ -100,6 +100,10 @@ def build_sarif_from_results(results: Dict[str, Any]) -> Tuple[Dict[str, Any], i
                     "fullDescription": {"text": entry.get("comment", "") or ""},
                     "properties": {"tags": ["detect-secrets"]},
                 }
+                # Future-proof CVSS: attach if present
+                cvss = entry.get("cvss")
+                if cvss is not None:
+                    rules_by_id[rule_id]["properties"]["cvss"] = cvss
 
             # Determine line number
             line = entry.get("line_number") or entry.get("line") or entry.get("start_line")
@@ -133,22 +137,14 @@ def build_sarif_from_results(results: Dict[str, Any]) -> Tuple[Dict[str, Any], i
             metadata = {}
             if "hashed_secret" in entry:
                 metadata["hashed_secret"] = entry.get("hashed_secret")
+                
+            # Attach CVSS at result level if present
+            cvss = entry.get("cvss")
+            if cvss is not None:
+                metadata["cvss"] = cvss
+                
             if metadata:
                 result["properties"] = {"detect_secrets": metadata}
-                
-            severity_map = {
-                "AWS Access Key": "critical",
-                "Base64 High Entropy String": "high",
-                "Secret Keyword": "medium",
-            }
-
-            sec_sev = severity_map.get(ftype, "low")
-
-            # Merge with existing properties
-            result["properties"] = {
-                "detect_secrets": metadata, 
-                "security-severity": sec_sev
-            }
 
             sarif_results.append(result)
 
