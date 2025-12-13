@@ -129,12 +129,22 @@ def build_sarif_from_results(results: Dict[str, Any]) -> Tuple[Dict[str, Any], i
                 # attach region only when we have a line
                 result["locations"][0]["physicalLocation"]["region"] = {"startLine": line}
 
-            # Optionally attach some metadata without exposing secrets
-            metadata = {}
+            # Determine security severity
+            severity_map = {
+                "critical": "critical",
+                "high": "high",
+                "medium": "medium",
+                "low": "low",
+            }
+            sec_sev = entry.get("severity", "medium").lower()
+            sec_sev = severity_map.get(sec_sev, "medium")
+
+            result_properties = {"security-severity": sec_sev}
+
             if "hashed_secret" in entry:
-                metadata["hashed_secret"] = entry.get("hashed_secret")
-            if metadata:
-                result["properties"] = {"detect_secrets": metadata}
+                result_properties["detect_secrets"] = {"hashed_secret": entry.get("hashed_secret")}
+
+            result["properties"] = result_properties
 
             sarif_results.append(result)
 
